@@ -3,49 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pocket Signal App</title>
+    <title>Pocket Turbo App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; margin: 0; padding: 10px; }
-        .header { text-align: center; padding: 10px; color: #0088cc; font-size: 20px; font-weight: bold; }
-        #chart-container { height: 300px; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 1px solid #333; }
-        .signal-card { background: #1e1e1e; border-radius: 12px; padding: 15px; border-left: 5px solid #444; margin-bottom: 10px; }
-        .up { border-left-color: #00c853; }
-        .down { border-left-color: #ff3d00; }
-        .prob { font-size: 24px; font-weight: bold; float: right; }
-        .pair { font-size: 18px; display: block; }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; margin: 0; padding: 10px; overflow-x: hidden; }
+        .header { text-align: center; padding: 10px; color: #0088cc; font-size: 18px; font-weight: bold; }
+        
+        /* Стили кнопок управления */
+        .controls { display: flex; justify-content: space-around; margin-bottom: 10px; gap: 5px; }
+        .btn { background: #2a2a2a; color: white; border: 1px solid #444; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 12px; flex: 1; }
+        .btn.active { background: #0088cc; border-color: #0088cc; }
+        
+        #chart-container { height: 250px; margin-bottom: 15px; border-radius: 10px; overflow: hidden; border: 1px solid #333; }
+        
+        /* Карточка сигнала */
+        .signal-card { background: #1e1e1e; border-radius: 12px; padding: 15px; position: relative; border: 1px solid #333; }
+        .pair-title { font-size: 18px; font-weight: bold; display: block; margin-bottom: 5px; }
+        .prob { position: absolute; right: 15px; top: 15px; font-size: 22px; color: #00c853; font-weight: bold; }
+
+        /* Анимированный ползунок */
+        .progress-container { width: 100%; background: #333; height: 8px; border-radius: 4px; margin-top: 15px; display: none; overflow: hidden; }
+        .progress-bar { width: 0%; height: 100%; background: #00c853; transition: width 1s linear; }
+        
+        #status-text { font-size: 14px; color: #aaa; margin-top: 10px; display: block; }
     </style>
 </head>
 <body>
-    <div class="header">POCKET TURBO APP</div>
+    <div class="header">POCKET TURBO TERMINAL</div>
     
+    <div class="controls">
+        <select class="btn" id="pair-select" onchange="changeSymbol()">
+            <option value="FX:EURUSD">EUR/USD</option>
+            <option value="FX:GBPUSD">GBP/USD</option>
+            <option value="FX:AUDUSD">AUD/USD</option>
+            <option value="FX:USDCAD">USD/CAD</option>
+            <option value="BITSTAMP:BTCUSD">BTC/USD</option>
+        </select>
+        <button class="btn" onclick="changeTF('1')" id="tf1">1М</button>
+        <button class="btn" onclick="changeTF('5')" id="tf5">5М</button>
+        <button class="btn" onclick="changeTF('15')" id="tf15">15М</button>
+    </div>
+
     <div id="chart-container">
-        <div class="tradingview-widget-container">
-            <div id="tradingview_chart"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-            <script type="text/javascript">
-                new TradingView.widget({
-                    "autosize": true, "symbol": "FX:EURUSD", "interval": "1",
-                    "timezone": "Etc/UTC", "theme": "dark", "style": "1",
-                    "locale": "ru", "toolbar_bg": "#f1f3f6", "enable_publishing": false,
-                    "hide_top_toolbar": true, "save_image": false, "container_id": "tradingview_chart"
-                });
-            </script>
+        <div id="tradingview_widget"></div>
+    </div>
+
+    <div class="signal-card" id="signal-box">
+        <span class="prob" id="prob-val">--%</span>
+        <span class="pair-title" id="pair-display">Ожидание...</span>
+        <span id="status-text">Анализ рынка 1м/5м/15м...</span>
+        
+        <div class="progress-container" id="p-container">
+            <div class="progress-bar" id="p-bar"></div>
         </div>
     </div>
 
-    <div id="signals">
-        <div class="signal-card">
-            <span class="prob">--%</span>
-            <span class="pair">Ожидание сигнала...</span>
-            <small>Бот анализирует рынок 1м/5м/15м</small>
-        </div>
-    </div>
-
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <script>
         let tg = window.Telegram.WebApp;
-        tg.expand(); // Развернуть приложение
+        tg.expand();
+
+        let currentSymbol = "FX:EURUSD";
+        let currentInterval = "1";
+
+        function loadChart() {
+            new TradingView.widget({
+                "autosize": true,
+                "symbol": currentSymbol,
+                "interval": currentInterval,
+                "timezone": "Etc/UTC",
+                "theme": "dark",
+                "style": "1",
+                "locale": "ru",
+                "enable_publishing": false,
+                "hide_top_toolbar": true,
+                "container_id": "tradingview_widget"
+            });
+        }
+
+        function changeSymbol() {
+            currentSymbol = document.getElementById('pair-select').value;
+            loadChart();
+        }
+
+        function changeTF(tf) {
+            currentInterval = tf;
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tf' + tf).classList.add('active');
+            loadChart();
+        }
+
+        // Имитация получения сигнала (для теста анимации)
+        // В реальности данные будут приходить из бота
+        function startTradeAnim(durationSeconds) {
+            const container = document.getElementById('p-container');
+            const bar = document.getElementById('p-bar');
+            const status = document.getElementById('status-text');
+            
+            container.style.display = 'block';
+            bar.style.width = '0%';
+            status.innerText = "Сделка открыта. Ждем экспирации...";
+
+            let start = Date.now();
+            let timer = setInterval(() => {
+                let timePassed = Date.now() - start;
+                let progress = (timePassed / (durationSeconds * 1000)) * 100;
+                
+                if (progress >= 100) {
+                    bar.style.width = '100%';
+                    clearInterval(timer);
+                    status.innerHTML = "Результат: <b style='color:#00c853'>✅ ПЛЮС</b>";
+                } else {
+                    bar.style.width = progress + '%';
+                }
+            }, 100);
+        }
+
+        loadChart();
+        document.getElementById('tf1').classList.add('active');
+        
+        // Пример запуска анимации (можно вызвать при получении данных)
+        // startTradeAnim(60); 
     </script>
 </body>
-
 </html>
