@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pocket Signal App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; margin: 0; padding: 10px; }
+        .header { text-align: center; padding: 10px; color: #0088cc; font-size: 20px; font-weight: bold; }
+        #chart-container { height: 300px; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 1px solid #333; }
+        .signal-card { background: #1e1e1e; border-radius: 12px; padding: 15px; border-left: 5px solid #444; margin-bottom: 10px; }
+        .up { border-left-color: #00c853; }
+        .down { border-left-color: #ff3d00; }
+        .prob { font-size: 24px; font-weight: bold; float: right; }
+        .pair { font-size: 18px; display: block; }
+    </style>
+</head>
+<body>
+    <div class="header">POCKET TURBO APP</div>
+    
+    <div id="chart-container">
+        <div class="tradingview-widget-container">
+            <div id="tradingview_chart"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+            <script type="text/javascript">
+                new TradingView.widget({
+                    "autosize": true, "symbol": "FX:EURUSD", "interval": "1",
+                    "timezone": "Etc/UTC", "theme": "dark", "style": "1",
+                    "locale": "ru", "toolbar_bg": "#f1f3f6", "enable_publishing": false,
+                    "hide_top_toolbar": true, "save_image": false, "container_id": "tradingview_chart"
+                });
+            </script>
+        </div>
+    </div>
+
+    <div id="signals">
+        <div class="signal-card">
+            <span class="prob">--%</span>
+            <span class="pair">Ожидание сигнала...</span>
+            <small>Бот анализирует рынок 1м/5м/15м</small>
+        </div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // Развернуть приложение
+    </script>
+</body>
+</html>
