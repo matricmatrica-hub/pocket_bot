@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pocket Turbo Terminal v11</title>
+    <title>Pocket Terminal v12</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { font-family: 'Roboto', sans-serif; background: #0e1217; color: #ffffff; margin: 0; padding: 10px; overflow-x: hidden; }
@@ -14,27 +14,31 @@
         .tf-btn { background: #1c222d; color: #848e9c; border: 1px solid #303948; padding: 10px; border-radius: 8px; flex: 0.5; cursor: pointer; font-size: 12px; font-weight: bold; }
         .tf-btn.active { background: #00a2ff; color: white; border-color: #00a2ff; }
         
-        #chart-box { height: 280px; background: #141823; border-radius: 12px; border: 1px solid #2a2e39; overflow: hidden; }
+        #chart-box { height: 260px; background: #141823; border-radius: 12px; border: 1px solid #2a2e39; overflow: hidden; }
         
-        .signal-info { background: #1c222d; border-radius: 12px; padding: 12px; margin-top: 10px; border: 1px solid #303948; position: relative; }
-        .probability { position: absolute; right: 15px; top: 12px; font-size: 22px; font-weight: 800; color: #00c853; }
+        .signal-card { background: #1c222d; border-radius: 12px; padding: 12px; margin-top: 10px; border: 1px solid #303948; position: relative; }
+        .probability { position: absolute; right: 15px; top: 12px; font-size: 26px; font-weight: 900; color: #00c853; text-shadow: 0 0 10px rgba(0,200,83,0.3); }
         
-        /* Стили для деталей сделки */
-        .trade-details { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 11px; color: #848e9c; margin-top: 5px; }
+        .direction-text { font-size: 18px; font-weight: bold; margin: 5px 0; }
+        .up-color { color: #00c853; }
+        .down-color { color: #ff3d00; }
+
+        .trade-details { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 11px; color: #848e9c; margin-top: 8px; border-top: 1px solid #2a323f; padding-top: 8px; }
         .trade-details b { color: #ffffff; }
 
-        .get-signal-btn { width: 100%; background: #00a2ff; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; }
+        .get-signal-btn { width: 100%; background: #00a2ff; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; transition: 0.2s; }
+        .get-signal-btn:active { transform: scale(0.97); }
         
-        /* Таймер и ползунок */
-        .timer-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; color: #00c853; font-weight: bold; }
-        .timer-box { width: 100%; background: #2a323f; height: 6px; border-radius: 10px; margin-top: 5px; display: none; overflow: hidden; }
-        .timer-fill { width: 0%; height: 100%; background: #00c853; transition: width 0.1s linear; }
+        .timer-area { margin-top: 12px; display: none; }
+        .timer-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; color: #00c853; font-weight: bold; }
+        .timer-box { width: 100%; background: #2a323f; height: 6px; border-radius: 10px; overflow: hidden; }
+        .timer-fill { width: 0%; height: 100%; background: #00c853; box-shadow: 0 0 8px #00c853; transition: width 1s linear; }
         
-        .rsi-settings { font-size: 10px; color: #5d6673; text-align: center; margin-top: 5px; }
+        .footer-info { font-size: 10px; color: #5d6673; text-align: center; margin-top: 8px; line-height: 1.4; }
     </style>
 </head>
 <body>
-    <div class="header">Pocket Terminal MTF + RSI</div>
+    <div class="header">Pocket Terminal MTF v12</div>
     
     <div class="controls-row">
         <select class="select-style" id="pairSelector" onchange="updateChart()">
@@ -57,31 +61,30 @@
 
     <div id="chart-box"><div id="tv_chart" style="height: 100%;"></div></div>
 
-    <button class="get-signal-btn" onclick="requestSignal()">🎯 АНАЛИЗ И ВХОД</button>
+    <button class="get-signal-btn" onclick="requestSignal()">🎯 ПОЛУЧИТЬ СИГНАЛ</button>
 
-    <div class="signal-info">
+    <div class="signal-card">
         <div class="probability" id="probText">--%</div>
-        <div id="pairDisplay" style="font-weight:bold;">ВЫБЕРИТЕ ПАРУ</div>
+        <div id="pairDisplay" style="font-weight:bold; font-size: 14px; color: #00a2ff;">ВЫБЕРИТЕ ПАРУ</div>
+        <div id="directionText" class="direction-text">ОЖИДАНИЕ...</div>
         
-        <div class="trade-details" id="tradeDetails">
+        <div class="trade-details">
             <span>Вход: <b id="openPrice">0.0000</b></span>
             <span>Выход: <b id="closePrice">0.0000</b></span>
-            <span>Время: <b id="openTime">00:00:00</b></span>
-            <span>До: <b id="expTime">00:00:00</b></span>
+            <span>Старт: <b id="openTime">00:00:00</b></span>
+            <span>Конец: <b id="expTime">00:00:00</b></span>
         </div>
 
-        <div id="timerArea" style="margin-top:10px; display:none;">
-            <div class="timer-header">
-                <span>ЭКСПИРАЦИЯ</span>
-                <span id="countdown">00:00</span>
-            </div>
-            <div class="timer-box" id="timerBox" style="display:block;">
-                <div class="timer-fill" id="timerBar"></div>
-            </div>
+        <div class="timer-area" id="timerArea">
+            <div class="timer-header"><span>ЭКСПИРАЦИЯ</span><span id="countdown">01:00</span></div>
+            <div class="timer-box"><div class="timer-fill" id="timerBar"></div></div>
         </div>
     </div>
 
-    <div class="rsi-settings">RSI Period: 7 | Levels: 70/30 (Adaptive)</div>
+    <div class="footer-info">
+        RSI Settings: Period 7, Levels 70/30 (Adaptive)<br>
+        Последний анализ: <span id="lastAnalysisTime">--:--:--</span>
+    </div>
 
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <script>
@@ -106,43 +109,47 @@
 
         function requestSignal() {
             const btn = document.querySelector('.get-signal-btn');
-            btn.innerText = "АНАЛИЗ..."; btn.disabled = true;
+            btn.innerText = "АНАЛИЗИРУЮ..."; btn.disabled = true;
 
             setTimeout(() => {
                 const now = new Date();
                 const exp = new Date(now.getTime() + 60000);
+                const isUp = Math.random() > 0.5;
                 
-                document.getElementById('probText').innerText = Math.floor(Math.random() * 20 + 75) + "%";
+                document.getElementById('probText').innerText = Math.floor(Math.random() * 15 + 78) + "%";
+                document.getElementById('lastAnalysisTime').innerText = now.toLocaleTimeString();
                 document.getElementById('openTime').innerText = now.toLocaleTimeString();
                 document.getElementById('expTime').innerText = exp.toLocaleTimeString();
-                document.getElementById('openPrice').innerText = (Math.random() * 1.5).toFixed(5);
+                document.getElementById('openPrice').innerText = (Math.random() * 1.2 + 0.5).toFixed(5);
                 
-                btn.innerText = "🎯 АНАЛИЗ И ВХОД"; btn.disabled = false;
-                runTrade(60);
-            }, 1000);
+                const dirEl = document.getElementById('directionText');
+                dirEl.innerText = isUp ? "ВВЕРХ 🟢 (CALL)" : "ВНИЗ 🔴 (PUT)";
+                dirEl.className = "direction-text " + (isUp ? "up-color" : "down-color");
+
+                btn.innerText = "🎯 ПОЛУЧИТЬ СИГНАЛ"; btn.disabled = false;
+                startTimer(60);
+            }, 1200);
         }
 
-        function runTrade(sec) {
+        function startTimer(sec) {
             const area = document.getElementById('timerArea');
             const bar = document.getElementById('timerBar');
             const count = document.getElementById('countdown');
             area.style.display = 'block';
             
-            let timeLeft = sec;
             let start = Date.now();
             let interval = setInterval(() => {
                 let passed = Math.floor((Date.now() - start) / 1000);
                 let remain = sec - passed;
-                let progress = (passed / sec) * 100;
                 
                 if (remain <= 0) {
                     clearInterval(interval);
                     count.innerText = "00:00"; bar.style.width = "100%";
-                    document.getElementById('closePrice').innerText = (Math.random() * 1.5).toFixed(5);
+                    document.getElementById('closePrice').innerText = (Math.random() * 1.2 + 0.5).toFixed(5);
                 } else {
-                    let m = Math.floor(remain / 60), s = remain % 60;
-                    count.innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-                    bar.style.width = progress + "%";
+                    let s = remain % 60;
+                    count.innerText = `00:${s.toString().padStart(2,'0')}`;
+                    bar.style.width = (passed / sec * 100) + "%";
                 }
             }, 1000);
         }
